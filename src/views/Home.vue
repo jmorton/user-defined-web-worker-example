@@ -21,7 +21,6 @@
         v-model="input"
         @change="run"
       />
-      <button @click="run">Do It.</button>
     </div>
     <div>
       <h2>Output</h2>
@@ -31,6 +30,13 @@
 </template>
 
 <script>
+const DEFAULT_CODE = `const parser = P.regexp(/[0-9]+/).map(s => Number(s));
+
+function handler (data) {
+    return parser.parse(data);
+}
+`;
+
 import MonacoEditor from "@/components/MonacoEditor";
 export default {
   name: "Home",
@@ -39,7 +45,7 @@ export default {
   },
   data() {
     return {
-      code: `function handler (data) { return data; }`,
+      code: DEFAULT_CODE,
       input: null,
       output: null,
       options: {},
@@ -49,7 +55,10 @@ export default {
     run(data) {
       try {
         const that = this;
-        const wrapped = `${this.code};
+        const wrapped = `
+          self.importScripts(self.location.origin+"/parsimmon.js");
+          const P = Parsimmon;
+          ${this.code};
           self.addEventListener('message', (e) => {
             self.postMessage(handler.call(e, e.data));
           }, false);`;
@@ -66,6 +75,7 @@ export default {
         };
         worker.postMessage(data);
       } catch (err) {
+        this.output = err;
         console.log(err);
       }
     },
