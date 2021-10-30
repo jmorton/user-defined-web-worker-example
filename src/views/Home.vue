@@ -1,32 +1,29 @@
 <template>
-  <div class="home">
-    <div>
-      <h2>Code</h2>
+  <div class="container">
+    <div class="code">
       <MonacoEditor
         theme="vs-dark"
         language="javascript"
         v-model="code"
-        width="450px"
-        height="280px"
+        width="100%"
+        height="100%"
         :options="options"
       />
     </div>
-    <div>
-      <h2>Input Data</h2>
+    <div class="data">
       <MonacoEditor
-        width="400px"
-        height="280px"
+        width="100%"
+        height="100%"
         theme="vs-dark"
         language="json"
         v-model="input"
         @change="run"
       />
     </div>
-    <div>
-      <h2>Output</h2>
+    <div class="result">
       <MonacoEditor
-        width="400px"
-        height="280px"
+        width="100%"
+        height="100%"
         theme="vs-dark"
         language="json"
         :value="result"
@@ -98,14 +95,28 @@ export default {
 </script>
 
 <style scoped>
-.home {
-  display: flex;
-  flex-wrap: wrap;
-  flex: 1 1 auto;
-  justify-content: space-between;
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px 12px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "code code"
+    "data result";
+  width: 100%;
+  height: 90%;
 }
-.home > div {
-  width: 450px;
-  margin: 0 5px;
+
+.code {
+  grid-area: code;
+}
+
+.data {
+  grid-area: data;
+}
+
+.result {
+  grid-area: result;
 }
 </style>
