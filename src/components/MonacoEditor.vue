@@ -137,7 +137,6 @@ export default {
           this._emitChange(value, event);
         });
       } else {
-        console.log("not a diff editor");
         editor.onDidChangeModelContent((event) => {
           const value = this._getValue();
           this._emitChange(value, event);

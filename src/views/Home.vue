@@ -6,15 +6,15 @@
         theme="vs-dark"
         language="javascript"
         v-model="code"
-        width="500px"
+        width="450px"
         height="280px"
         :options="options"
       />
     </div>
     <div>
-      <h2>Data</h2>
+      <h2>Input Data</h2>
       <MonacoEditor
-        width="500px"
+        width="400px"
         height="280px"
         theme="vs-dark"
         language="json"
@@ -24,18 +24,22 @@
     </div>
     <div>
       <h2>Output</h2>
-      {{ output }}
+      <MonacoEditor
+        width="400px"
+        height="280px"
+        theme="vs-dark"
+        language="json"
+        :value="result"
+      />
+      <button @click="test">Refresh</button>
     </div>
   </div>
 </template>
 
 <script>
-const DEFAULT_CODE = `const parser = P.regexp(/[0-9]+/).map(s => Number(s));
-
-function handler (data) {
-    return parser.parse(data);
-}
-`;
+const DEFAULT_CODE = `const P = Parsimmon;
+const parser = P.regexp(/[0-9]+/).map(s => Number(s));
+return parser.parse(this);`;
 
 import MonacoEditor from "@/components/MonacoEditor";
 export default {
@@ -46,38 +50,48 @@ export default {
   data() {
     return {
       code: DEFAULT_CODE,
-      input: null,
+      input: "123",
       output: null,
       options: {},
+      worker: null,
     };
   },
+  mounted() {
+    this.test();
+  },
+  computed: {
+    result() {
+      return JSON.stringify(this.output, null, 2);
+    },
+  },
   methods: {
+    rework() {
+      if (this.worker) {
+        this.worker?.terminate();
+      }
+      const component = this;
+      this.worker = new Worker("/eval-web-worker.js");
+      this.worker.onmessage = function (e) {
+        component.output = e.data;
+      };
+      this.worker.postMessage({
+        code: this.code,
+        imports: [
+          "https://cdnjs.cloudflare.com/ajax/libs/parsimmon/1.18.0/parsimmon.umd.min.js",
+        ],
+      });
+    },
     run(data) {
       try {
-        const that = this;
-        const wrapped = `
-          self.importScripts(self.location.origin+"/parsimmon.js");
-          const P = Parsimmon;
-          ${this.code};
-          self.addEventListener('message', (e) => {
-            self.postMessage(handler.call(e, e.data));
-          }, false);`;
-        const blob = new Blob([wrapped]);
-        const url = window.URL.createObjectURL(blob);
-        const worker = new Worker(url);
-        worker.onmessage = function (e) {
-          that.output = e.data;
-          window.URL.revokeObjectURL(url);
-        };
-        worker.onerror = function (e) {
-          this.output = e;
-          window.URL.revokeObjectURL(url);
-        };
-        worker.postMessage(data);
+        this.worker.postMessage({ data });
       } catch (err) {
         this.output = err;
         console.log(err);
       }
+    },
+    test() {
+      this.rework();
+      this.worker.postMessage({ data: this.input });
     },
   },
 };
@@ -86,11 +100,12 @@ export default {
 <style scoped>
 .home {
   display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: space-between;
 }
 .home > div {
-  margin-right: 1em;
-}
-.editor {
-  width: 400px;
+  width: 450px;
+  margin: 0 5px;
 }
 </style>
